@@ -14,16 +14,126 @@
 
         <link rel="stylesheet" href="css/normalize.css">
         <link rel="stylesheet" href="css/main.css">
+        <link href="css/bootstrap.min.css" rel="stylesheet">
         <script src="js/vendor/modernizr-2.6.2.min.js"></script>
+        <script src="js/vendor/raphael-2.1.0.min.js"></script>
+        <script src="js/bootstrap.min.js"></script>
+       <script>
+            window.onload = function () {
+                var r = Raphael("holder", 600, 600),
+                    R = 200,
+                    init = true,
+                    param = {stroke: "#fff", "stroke-width": 30},
+                    hash = document.location.hash,
+                    marksAttr = {fill: hash || "#444", stroke: "none"},
+                    start = new Date,
+                    sound = false,
+                    snd = new Audio("sound/tick.wav"),
+                    html = [
+                        document.getElementById("s"),
+                        document.getElementById("m"),
+                    ];
+
+
+                // Custom Attribute
+                r.customAttributes.arc = function (value, total, R) {
+                    var alpha = 360 / total * value,
+                        a = (90 - alpha) * Math.PI / 180,
+                        x = 300 + R * Math.cos(a),
+                        y = 300 - R * Math.sin(a),
+                        color = "hsb(".concat(1, ",", value / total, ", .75)"),
+                        path;
+                    if (total == value) {
+                        path = [["M", 300, 300 - R], ["A", R, R, 0, 1, 1, 299.99, 300 - R]];
+                    } else {
+                        path = [["M", 300, 300 - R], ["A", R, R, 0, +(alpha > 180), 1, x, y]];
+                    }
+                    return {path: path, stroke: color};
+                };
+
+                drawMarks(R, 25 * 60);
+                var sec = r.path().attr(param).attr({arc: [0, 60, R]});
+
+                function updateGraph(value, total, R, hand) {
+                    var color = "hsb(".concat(1, ",", value / total, ", .75)");
+                    if (init) {
+                        hand.animate({arc: [value, total, R]}, 900, ">");
+                    } else {
+                        if (!value || value == total) {
+                            value = total;
+                            hand.animate({arc: [value, total, R]}, 750, "bounce", function () {
+                                hand.attr({arc: [0, total, R]});
+                            });
+                        } else {
+                            hand.animate({arc: [value, total, R]}, 750, "elastic");
+                        }
+                    }
+                }
+                function updateText(value, total, R, id) {
+                    var color = "hsb(".concat(1, ",", value / total, ", .75)");
+                    html[id].innerHTML = (value < 10 ? "0" : "") + value;
+                    html[id].style.color = Raphael.getRGB(color).hex;
+                }
+
+                function drawMarks(R, total) {
+                    var color = "hsb(1, 1, .75)",
+                        out = r.set(),
+                        inc = total / 20;
+                    for (var value = 0; value < total; value+=inc) {
+                        var alpha = 360 / total * value,
+                            a = (90 - alpha) * Math.PI / 180,
+                            x = 300 + R * Math.cos(a),
+                            y = 300 - R * Math.sin(a);
+                        out.push(r.circle(x, y, 2).attr(marksAttr));
+                    }
+                    return out;
+                }
+
+                (function () {
+                    var d = new Date;
+                        done = new Date(d - start);
+                    updateGraph(done.getTime() / 1000, 60 * 25, R, sec, 0);
+                    updateText(59 - done.getSeconds(), 60, R, 0);
+                    updateText(24 - done.getMinutes(), 25, R, 1);
+                    if (sound) {
+                      snd.play();
+                    }
+                    setTimeout(arguments.callee, 1000);
+                    init = false;
+                })();
+            };
+        </script>
+        <style media="screen">
+            #holder {
+                height: 600px;
+                margin: -250px 0 0 -300px;
+                width: 600px;
+                left: 50%;
+                position: absolute;
+                top: 50%;
+              }
+              #time {
+                text-align: center;
+                font: 100 4em "Helvetica Neue", Helvetica, Arial, sans-serif;
+                font-weight:bold;
+              }
+        </style>
     </head>
     <body>
         <!--[if lt IE 7]>
             <p class="chromeframe">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> or <a href="http://www.google.com/chromeframe/?redirect=true">activate Google Chrome Frame</a> to improve your experience.</p>
         <![endif]-->
 
-        <!-- Add your site or application content here -->
-        <p>Hello world! This is HTML5 Boilerplate.</p>
+        <div id="holder"></div>
+        <div id="time">
+            <span id="m"></span>:<span id="s"></span></span>
+        </div>
 
+        <div>
+          <button id="start_pomodoro" class="btn btn-large btn-primary" type="button">Start pomodoro</button>
+          <button id="start_short" class="btn btn-large btn-primary" type="button">Start short pause</button>
+          <button id="start_long" class="btn btn-large btn-primary" type="button">Start long pause</button>
+        </div>
         <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
         <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.8.2.min.js"><\/script>')</script>
         <script src="js/plugins.js"></script>
