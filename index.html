@@ -18,10 +18,14 @@
         <script src="js/vendor/modernizr-2.6.2.min.js"></script>
         <script src="js/vendor/raphael-2.1.0.min.js"></script>
         <script src="js/bootstrap.min.js"></script>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
+        <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.8.2.min.js"><\/script>')</script>
        <script>
-            window.onload = function () {
+            var run = true;
+            var running = false;
+            function start(duration) {
                 var r = Raphael("holder", 600, 600),
-                    R = 200,
+                    R = 100,
                     init = true,
                     param = {stroke: "#fff", "stroke-width": 30},
                     hash = document.location.hash,
@@ -51,7 +55,7 @@
                     return {path: path, stroke: color};
                 };
 
-                drawMarks(R, 25 * 60);
+                drawMarks(R, duration * 60);
                 var sec = r.path().attr(param).attr({arc: [0, 60, R]});
 
                 function updateGraph(value, total, R, hand) {
@@ -89,34 +93,111 @@
                     return out;
                 }
 
+                running = true;
+                run = true;
+
                 (function () {
                     var d = new Date;
                         done = new Date(d - start);
-                    updateGraph(done.getTime() / 1000, 60 * 25, R, sec, 0);
-                    updateText(59 - done.getSeconds(), 60, R, 0);
-                    updateText(24 - done.getMinutes(), 25, R, 1);
-                    if (sound) {
-                      snd.play();
+                    if (run) {
+                      updateGraph(done.getTime() / 1000, 60 * duration, R, sec, 0);
+                      updateText(59 - done.getSeconds(), 60, R, 0);
+                      updateText(duration - 1 - done.getMinutes(), duration, R, 1);
+                      document.title = $('#time').text();
+                      if (sound) {
+                        snd.play();
+                      }
+                      setTimeout(arguments.callee, 1000);
+                    } else {
+                      init = true;
+                      updateGraph(0, 60 * duration, R, sec, 0);
+                      running = false;
                     }
-                    setTimeout(arguments.callee, 1000);
                     init = false;
                 })();
-            };
+            }
+            function toggle_activity(button, duration) {
+              var html_s = document.getElementById("s"),
+                  html_m = document.getElementById("m");
+              if (running) {
+                run = false;
+              } else {
+                run = true;
+              }
+              if (run) {
+                (function() {
+                  if (running) {
+                    setTimeout(arguments.callee, 1000);
+                  } else {
+                    html_s.innerHTML = "00";
+                    html_m.innerHTML = duration;
+                    start(duration);
+                  }
+                })();
+              } else {
+                (function() {
+                  if (running) {
+                    html_s.innerHTML = "00";
+                    html_m.innerHTML = duration;
+                    document.title = $('#time').text();
+                    setTimeout(arguments.callee, 1000);
+                  } else {
+                    html_s.innerHTML = "00";
+                    html_m.innerHTML = duration;
+                  }
+                })();
+              }
+            }
+            $(function() {
+              var links = $('button.link').click(function() {
+                var text = $(this).html();
+                if (text.indexOf('Start') !== -1) {
+                  text = text.replace('Start', 'Stop');
+                  $(this).removeClass('btn-primary');
+                  $(this).addClass('btn-warning');
+                } else {
+                  text = text.replace('Stop', 'Start');
+                  $(this).removeClass('btn-warning');
+                  $(this).addClass('btn-primary');
+                }
+                $(this).html(text);
+              });
+            });
+            $(document).ready(function () {
+
+              $(document).keydown(function(e) {
+                if (e.which == 83) { // 's'
+                  toggle_activity(document.getElementById('start_pomodoro'), 25);
+                }
+              });
+
+            });
+
         </script>
         <style media="screen">
-            #holder {
-                height: 600px;
-                margin: -250px 0 0 -300px;
-                width: 600px;
-                left: 50%;
-                position: absolute;
-                top: 50%;
-              }
-              #time {
-                text-align: center;
-                font: 100 4em "Helvetica Neue", Helvetica, Arial, sans-serif;
-                font-weight:bold;
-              }
+          #holder {
+            height: 600px;
+            margin: -250px 0 0 -300px;
+            width: 600px;
+            left: 50%;
+            position: absolute;
+            top: 50%;
+          }
+          #buttons {
+            height: 600px;
+            margin: -200px 0 0 -300px;
+            width: 600px;
+            left: 50%;
+            position: absolute;
+            text-align: center;
+            top: 50%;
+          }
+          #time {
+            text-align: center;
+            font: 100 4em "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-weight:bold;
+          }
+
         </style>
     </head>
     <body>
@@ -126,16 +207,14 @@
 
         <div id="holder"></div>
         <div id="time">
-            <span id="m"></span>:<span id="s"></span></span>
+            <span id="m">25</span>:<span id="s">00</span></span>
         </div>
 
-        <div>
-          <button id="start_pomodoro" class="btn btn-large btn-primary" type="button">Start pomodoro</button>
-          <button id="start_short" class="btn btn-large btn-primary" type="button">Start short pause</button>
-          <button id="start_long" class="btn btn-large btn-primary" type="button">Start long pause</button>
+        <div id="buttons">
+          <button id="start_pomodoro" class="link btn btn-large btn-primary" type="button" onclick="toggle_activity(this, 25);">Start pomodoro</button>
+          <button id="start_short" class="link btn btn-large btn-primary" type="button" onclick="toggle_activity(this, 5);">Start short pause</button>
+          <button id="start_long" class="link btn btn-large btn-primary" type="button" onclick="toggle_activity(this, 10);">Start long pause</button>
         </div>
-        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
-        <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.8.2.min.js"><\/script>')</script>
         <script src="js/plugins.js"></script>
         <script src="js/main.js"></script>
 
