@@ -32,7 +32,8 @@
                     marksAttr = {fill: hash || "#444", stroke: "none"},
                     start = new Date,
                     sound = false,
-                    snd = new Audio("sound/tick.wav"),
+                    tick = new Audio("sound/tick.wav"),
+                    ring = new Audio("sound/ring.wav"),
                     html = [
                         document.getElementById("s"),
                         document.getElementById("m"),
@@ -98,14 +99,20 @@
 
                 (function () {
                     var d = new Date;
-                        done = new Date(d - start);
+                        done = new Date(d - start),
+                        second_counter = 59 - done.getSeconds(),
+                        minute_counter = duration - 1 - done.getMinutes();
+                    if (minute_counter < 0) {
+                      run = false;
+                      ring.play();
+                    }
                     if (run) {
                       updateGraph(done.getTime() / 1000, 60 * duration, R, sec, 0);
-                      updateText(59 - done.getSeconds(), 60, R, 0);
-                      updateText(duration - 1 - done.getMinutes(), duration, R, 1);
+                      updateText(second_counter, 60, R, 0);
+                      updateText(minute_counter, duration, R, 1);
                       document.title = $('#time').text();
                       if (sound) {
-                        snd.play();
+                        tick.play();
                       }
                       setTimeout(arguments.callee, 1000);
                     } else {
@@ -142,32 +149,42 @@
                     document.title = $('#time').text();
                     setTimeout(arguments.callee, 1000);
                   } else {
+                    reset_ui();
                     html_s.innerHTML = "00";
                     html_m.innerHTML = duration;
                   }
                 })();
               }
             }
+            function reset_ui() {
+              $('button.link').addClass('btn');
+              $('button.link').addClass('btn-large');
+              $('button.link').removeClass('btn-warning');
+              $('button.link').addClass('btn-primary');
+              $('#start_pomodoro').html("Start pomodoro");
+              $('#start_short').html("Start short pause");
+              $('#start_long').html("Start long pause");
+            }
             $(function() {
-              var links = $('button.link').click(function() {
+              $('button.link').click(function() {
+                reset_ui();
                 var text = $(this).html();
-                if (text.indexOf('Start') !== -1) {
-                  text = text.replace('Start', 'Stop');
-                  $(this).removeClass('btn-primary');
-                  $(this).addClass('btn-warning');
-                } else {
-                  text = text.replace('Stop', 'Start');
-                  $(this).removeClass('btn-warning');
-                  $(this).addClass('btn-primary');
-                }
+                text = text.replace('Start', 'Stop');
+                $(this).removeClass('btn-primary');
+                $(this).addClass('btn-warning');
                 $(this).html(text);
               });
             });
-            $(document).ready(function () {
 
+            /* Keyboard shortcuts */
+            $(document).ready(function () {
               $(document).keydown(function(e) {
-                if (e.which == 83) { // 's'
-                  toggle_activity(document.getElementById('start_pomodoro'), 25);
+                if (e.which == 80) { // 'p'
+                  document.getElementById('start_pomodoro').click();
+                } else if (e.which == 83) { // 's'
+                  document.getElementById('start_short').click();
+                } else if (e.which == 76) { // 'l'
+                  document.getElementById('start_long').click();
                 }
               });
 
