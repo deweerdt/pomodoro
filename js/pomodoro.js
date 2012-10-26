@@ -1,36 +1,42 @@
 var running = false;
 var stop = null;
+var r = null;
 
 function start(duration) {
-  var timer = null;
-  var r = Raphael("holder", 600, 600),
-  R = 100,
-  init = true,
-  param = {stroke: "#fff", "stroke-width": 30},
-  hash = document.location.hash,
-  marksAttr = {fill: hash || "#444", stroke: "none"},
-  start_time = new Date,
-  sound = false,
-  tick = new Audio("sound/tick.wav"),
-  ring = new Audio("sound/ring.wav"),
-  html = [
-    document.getElementById("s"),
-    document.getElementById("m"),
-  ];
+
+  var width = 160,
+      height = 200,
+      R = 75,
+      init = true,
+      param = {stroke: "#fff", "stroke-width": 30},
+      hash = document.location.hash,
+      marksAttr = {fill: hash || "#444", stroke: "none"},
+      start_time = new Date,
+      sound = false,
+      timer = null,
+      tick = new Audio("sound/tick.wav"),
+      ring = new Audio("sound/ring.wav"),
+      html = [
+        document.getElementById("s"),
+        document.getElementById("m"),
+      ];
 
 
+  if (r === null) {
+    r = Raphael("clock", width, height);
+  }
   // Custom Attribute
   r.customAttributes.arc = function (value, total, R) {
     var alpha = 360 / total * value,
     a = (90 - alpha) * Math.PI / 180,
-    x = 300 + R * Math.cos(a),
-    y = 300 - R * Math.sin(a),
+    x = (width / 2) + R * Math.cos(a),
+    y = (height / 2) - R * Math.sin(a),
     color = "hsb(".concat(1, ",", value / total, ", .75)"),
     path;
     if (total == value) {
-      path = [["M", 300, 300 - R], ["A", R, R, 0, 1, 1, 299.99, 300 - R]];
+      path = [["M", (width / 2), (height / 2) - R], ["A", R, R, 0, 1, 1, (width / 2) - 0.01, (height / 2) - R]];
     } else {
-      path = [["M", 300, 300 - R], ["A", R, R, 0, +(alpha > 180), 1, x, y]];
+      path = [["M", (width / 2), (height / 2) - R], ["A", R, R, 0, +(alpha > 180), 1, x, y]];
     }
     return {path: path, stroke: color};
   };
@@ -62,13 +68,13 @@ function start(duration) {
   function drawMarks(R, total) {
     var color = "hsb(1, 1, .75)",
     out = r.set(),
-    inc = total / 20;
+    inc = total / 4;
     for (var value = 0; value < total; value+=inc) {
       var alpha = 360 / total * value,
       a = (90 - alpha) * Math.PI / 180,
-      x = 300 + R * Math.cos(a),
-      y = 300 - R * Math.sin(a);
-      out.push(r.circle(x, y, 2).attr(marksAttr));
+      x = (width / 2) + R * Math.cos(a),
+      y = (height / 2) - R * Math.sin(a);
+      out.push(r.circle(x, y, 5).attr(marksAttr));
     }
     return out;
   }
@@ -83,6 +89,7 @@ function start(duration) {
     if (minute_counter < 0) {
       ring.play();
       stop();
+      stop = null;
       return;
     }
 
@@ -112,8 +119,9 @@ function toggle_activity(button, duration) {
     running = false;
     reset_ui();
     stop();
+    stop = null;
     html_s.innerHTML = "00";
-    html_m.innerHTML = duration;
+    html_m.innerHTML = (duration < 10 ? "0" : "") + duration;
     document.title = $('#time').text();
   } else {
     var text = button.html();
