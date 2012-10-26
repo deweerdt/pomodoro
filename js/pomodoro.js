@@ -109,12 +109,12 @@ function toggle_activity(button, duration) {
   if (running) {
     var html_s = document.getElementById("s"),
         html_m = document.getElementById("m");
+    running = false;
     reset_ui();
+    stop();
     html_s.innerHTML = "00";
     html_m.innerHTML = duration;
     document.title = $('#time').text();
-    stop();
-    running = false;
   } else {
     var text = button.html();
     text = text.replace('Start', 'Stop');
