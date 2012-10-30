@@ -1,82 +1,78 @@
 var running = false;
 var stop = null;
-var r = null;
+
+function color_hex(color) {
+  var r = Math.round(color[0] * 255),
+      g = Math.round(color[1] * 255),
+      b = Math.round(color[2] * 255);
+  return '#'+r.toString(16)+g.toString(16)+b.toString(16);
+}
+
+function hsv_to_rgb(color) {
+  var h = color[0],
+      s = color[1],
+      v = color[2];
+  var c = s * v;
+  var h1 = Math.floor(h * 6) % 6;
+  var x = c * (1 - Math.abs((h1 % 2) - 1));
+  var r1, g1, b1;
+
+  switch(h1) {
+    case 0:
+      r1 = c;
+      g1 = x;
+      b1 = 0;
+      break;
+    case 1:
+      r1 = x;
+      g1 = c;
+      b1 = 0;
+      break;
+    case 2:
+      r1 = 0;
+      g1 = c;
+      b1 = x;
+      break;
+    case 3:
+      r1 = 0;
+      g1 = x;
+      b1 = c;
+      break;
+    case 4:
+      r1 = x;
+      g1 = 0;
+      b1 = c;
+      break;
+    case 5:
+      r1 = c;
+      g1 = 0;
+      b1 = x;
+      break;
+  }
+  var m = v - c;
+  return [r1 + m, g1 + m, b1 + m];
+}
 
 function start(duration) {
 
-  var width = 160,
-      height = 200,
-      R = 75,
-      init = true,
-      param = {stroke: "#fff", "stroke-width": 30},
-      hash = document.location.hash,
-      marksAttr = {fill: hash || "#444", stroke: "none"},
-      start_time = new Date,
+  var start_time = new Date,
       sound = false,
       timer = null,
       tick = new Audio("sound/tick.wav"),
       ring = new Audio("sound/ring.wav"),
-      html = [
-        document.getElementById("s"),
-        document.getElementById("m"),
-      ];
+      html = {
+        's' : document.getElementById("s"),
+        'm' : document.getElementById("m"),
+        'b' : document.getElementById("b"),
+      };
 
-
-  if (r === null) {
-    r = Raphael("clock", width, height);
+  function update_bar(value, total) {
+    $('div#b').width((value * 100 / total) + "%");
   }
-  // Custom Attribute
-  r.customAttributes.arc = function (value, total, R) {
-    var alpha = 360 / total * value,
-    a = (90 - alpha) * Math.PI / 180,
-    x = (width / 2) + R * Math.cos(a),
-    y = (height / 2) - R * Math.sin(a),
-    color = "hsb(".concat(1, ",", value / total, ", .75)"),
-    path;
-    if (total == value) {
-      path = [["M", (width / 2), (height / 2) - R], ["A", R, R, 0, 1, 1, (width / 2) - 0.01, (height / 2) - R]];
-    } else {
-      path = [["M", (width / 2), (height / 2) - R], ["A", R, R, 0, +(alpha > 180), 1, x, y]];
-    }
-    return {path: path, stroke: color};
-  };
-
-  drawMarks(R, duration * 60);
-  var sec = r.path().attr(param).attr({arc: [0, 60, R]});
-
-  function updateGraph(value, total, R, hand) {
-    var color = "hsb(".concat(1, ",", value / total, ", .75)");
-    if (init) {
-      hand.animate({arc: [value, total, R]}, 900, ">");
-    } else {
-      if (!value || value == total) {
-        value = total;
-        hand.animate({arc: [value, total, R]}, 750, "bounce", function () {
-          hand.attr({arc: [0, total, R]});
-        });
-      } else {
-        hand.animate({arc: [value, total, R]}, 750, "elastic");
-      }
-    }
-  }
-  function updateText(value, total, R, id) {
-    var color = "hsb(".concat(1, ",", value / total, ", .75)");
+  function update_text(value, total, id) {
+    var color_hsv = [ 1, value / total, 0.75 ];
     html[id].innerHTML = (value < 10 ? "0" : "") + value;
-    html[id].style.color = Raphael.getRGB(color).hex;
-  }
-
-  function drawMarks(R, total) {
-    var color = "hsb(1, 1, .75)",
-    out = r.set(),
-    inc = total / 4;
-    for (var value = 0; value < total; value+=inc) {
-      var alpha = 360 / total * value,
-      a = (90 - alpha) * Math.PI / 180,
-      x = (width / 2) + R * Math.cos(a),
-      y = (height / 2) - R * Math.sin(a);
-      out.push(r.circle(x, y, 5).attr(marksAttr));
-    }
-    return out;
+    html[id].style.color = color_hex(hsv_to_rgb(color_hsv));
   }
 
   running = true;
@@ -93,9 +89,9 @@ function start(duration) {
       return;
     }
 
-    updateGraph(done.getTime() / 1000, 60 * duration, R, sec, 0);
-    updateText(second_counter, 60, R, 0);
-    updateText(minute_counter, duration, R, 1);
+    update_bar(done.getTime() / 1000, 60 * duration);
+    update_text(second_counter, 60, 's');
+    update_text(minute_counter, duration, 'm');
     document.title = $('#time').text();
     if (sound) {
       tick.play();
@@ -108,7 +104,7 @@ function start(duration) {
   return function () {
     clearTimeout(timer);
     init = true;
-    updateGraph(0, 60 * duration, R, sec, 0);
+    update_bar(0, 60 * duration);
   };
 }
 
@@ -118,7 +114,8 @@ function toggle_activity(button, duration) {
         html_m = document.getElementById("m");
     running = false;
     reset_ui();
-    stop();
+    if (stop !== null)
+      stop();
     stop = null;
     html_s.innerHTML = "00";
     html_m.innerHTML = (duration < 10 ? "0" : "") + duration;
