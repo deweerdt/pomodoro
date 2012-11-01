@@ -1,159 +1,137 @@
-var running = false;
-var stop = null;
+var Pomodoro = (function () {
+	var timers = {
+		pomodoro : {
+			running : false,
+			duration : 25
+		},
+		short_pause : {
+			running : false,
+			duration : 5,
+		},
+		long_pause : {
+			running : false,
+			duration : 10,
+		}
+	};
+	var settings = {
+		tick : {
+			value : false,
+			id : 'tick',
+		},
+		ring : {
+			value : true,
+			id : 'ring',
+		},
+	};
+	var tick = new Audio("sound/tick.wav");
+	var ring = new Audio("sound/ring.wav");
+	var stop = null;
+	function start(period) {
+		var start_time = new Date,
+		sound = false,
+		timer = null;
 
-function color_hex(color) {
-  var r = Math.round(color[0] * 255),
-      g = Math.round(color[1] * 255),
-      b = Math.round(color[2] * 255);
-  return '#'+r.toString(16)+g.toString(16)+b.toString(16);
-}
+		function update_bar(value, total) {
+			$('#b').width((value * 100 / total) + "%");
+		}
+		function update_text(value, total, id) {
+			$("#"+id).text((value < 10 ? "0" : "") + value);
+		}
 
-function hsv_to_rgb(color) {
-  var h = color[0],
-      s = color[1],
-      v = color[2];
-  var c = s * v;
-  var h1 = Math.floor(h * 6) % 6;
-  var x = c * (1 - Math.abs((h1 % 2) - 1));
-  var r1, g1, b1;
+		period.running = true;
 
-  switch(h1) {
-    case 0:
-      r1 = c;
-      g1 = x;
-      b1 = 0;
-      break;
-    case 1:
-      r1 = x;
-      g1 = c;
-      b1 = 0;
-      break;
-    case 2:
-      r1 = 0;
-      g1 = c;
-      b1 = x;
-      break;
-    case 3:
-      r1 = 0;
-      g1 = x;
-      b1 = c;
-      break;
-    case 4:
-      r1 = x;
-      g1 = 0;
-      b1 = c;
-      break;
-    case 5:
-      r1 = c;
-      g1 = 0;
-      b1 = x;
-      break;
-  }
-  var m = v - c;
-  return [r1 + m, g1 + m, b1 + m];
-}
+		(function () {
+			var d = new Date;
+			done = new Date(d - start_time),
+			second_counter = 59 - done.getSeconds(),
+			minute_counter = period.duration - 1 - done.getMinutes();
+			if (minute_counter < 0) {
+				if (settings.ring.value === true)
+					ring.play();
+				stop();
+				stop = null;
+				return;
+			}
 
-function start(duration) {
+			update_bar(done.getTime() / 1000, 60 * period.duration);
+			update_text(second_counter, 60, 's');
+			update_text(minute_counter, period.duration, 'm');
+			document.title = $('#time').text();
+			if (settings.tick.value === true) {
+				tick.play();
+			}
+			timer = setTimeout(arguments.callee, 1000);
 
-  var start_time = new Date,
-      sound = false,
-      timer = null,
-      tick = new Audio("sound/tick.wav"),
-      ring = new Audio("sound/ring.wav"),
-      html = {
-        's' : document.getElementById("s"),
-        'm' : document.getElementById("m"),
-        'b' : document.getElementById("b"),
-      };
+			init = false;
+		})();
 
-  function update_bar(value, total) {
-    $('div#b').width((value * 100 / total) + "%");
-  }
-  function update_text(value, total, id) {
-    var color_hsv = [ 1, value / total, 0.75 ];
-    html[id].innerHTML = (value < 10 ? "0" : "") + value;
-    html[id].style.color = color_hex(hsv_to_rgb(color_hsv));
-  }
+		return function () {
+			clearTimeout(timer);
+			init = true;
+			period.running = false;
+			update_bar(0, 60 * period.duration);
+		};
+	}
 
-  running = true;
+	function toggle_activity(button, name) {
+		var timer = timers[name];
+		var was_already_running = timers[name].running === true;
+		if (stop !== null) {
+			stop();
+			reset_ui();
+			$("#s").html("--");
+			$("#m").html("--");
+			document.title = $('#time').text();
+			stop = null;
+			if (was_already_running)
+				return;
+		}
+		var text = button.html();
+		text = text.replace('Start', 'Stop');
+		button.removeClass('btn-primary');
+		button.addClass('btn-warning');
+		button.html(text);
+		stop = start(timers[name]);
+	}
 
-  (function () {
-    var d = new Date;
-    done = new Date(d - start_time),
-    second_counter = 59 - done.getSeconds(),
-    minute_counter = duration - 1 - done.getMinutes();
-    if (minute_counter < 0) {
-      ring.play();
-      stop();
-      stop = null;
-      return;
-    }
+	function reset_ui() {
+		/* Remove all classes */
+		var buttons = $('button.link');
+		buttons.removeClass();
+		buttons.addClass('link');
+		buttons.addClass('btn');
+		buttons.addClass('btn-large');
+		buttons.addClass('btn-primary');
+		$('#start_pomodoro').html("Start pomodoro");
+		$('#start_short').html("Start short pause");
+		$('#start_long').html("Start long pause");
+	}
 
-    update_bar(done.getTime() / 1000, 60 * duration);
-    update_text(second_counter, 60, 's');
-    update_text(minute_counter, duration, 'm');
-    document.title = $('#time').text();
-    if (sound) {
-      tick.play();
-    }
-    timer = setTimeout(arguments.callee, 1000);
+	function refresh_settings() {
+		settings.tick.value = $("input#"+settings.tick.id).prop('checked');
+		settings.ring.value = $("input#"+settings.ring.id).prop('checked');
+	}
 
-    init = false;
-  })();
-
-  return function () {
-    clearTimeout(timer);
-    init = true;
-    update_bar(0, 60 * duration);
-  };
-}
-
-function toggle_activity(button, duration) {
-  if (running) {
-    var html_s = document.getElementById("s"),
-        html_m = document.getElementById("m");
-    running = false;
-    reset_ui();
-    if (stop !== null)
-      stop();
-    stop = null;
-    html_s.innerHTML = "00";
-    html_m.innerHTML = (duration < 10 ? "0" : "") + duration;
-    document.title = $('#time').text();
-  } else {
-    var text = button.html();
-    text = text.replace('Start', 'Stop');
-    button.removeClass('btn-primary');
-    button.addClass('btn-warning');
-    button.html(text);
-    stop = start(duration);
-  }
-}
-function reset_ui() {
-  /* Remove all classes */
-  var buttons = $('button.link');
-  buttons.removeClass();
-  buttons.addClass('link');
-  buttons.addClass('btn');
-  buttons.addClass('btn-large');
-  buttons.addClass('btn-primary');
-  $('#start_pomodoro').html("Start pomodoro");
-  $('#start_short').html("Start short pause");
-  $('#start_long').html("Start long pause");
-}
-
-/* Keyboard shortcuts */
-$(document).ready(function () {
-  $(document).keydown(function(e) {
-    if (e.which == 80) { // 'p'
-      document.getElementById('start_pomodoro').click();
-    } else if (e.which == 83) { // 's'
-      document.getElementById('start_short').click();
-    } else if (e.which == 76) { // 'l'
-      document.getElementById('start_long').click();
-    }
-  });
-
-});
-
-
+	function init_fn () {
+		$(document).ready(function () {
+			/* Keyboard shortcuts */
+			$(document).keydown(function(e) {
+				if (e.which == 80) { // 'p'
+					$('#start_pomodoro').click();
+				} else if (e.which == 83) { // 's'
+					$('#start_short').click();
+				} else if (e.which == 76) { // 'l'
+					$('#start_long').click();
+				}
+			});
+			/* Settings */
+			$("input#"+settings.tick.id).prop('checked' , settings.tick.value);
+			$("input#"+settings.ring.id).prop('checked' , settings.ring.value);
+		});
+	}
+	return {
+		init : init_fn,
+		refresh_settings : refresh_settings,
+		toggle_activity : toggle_activity
+	};
+}());
