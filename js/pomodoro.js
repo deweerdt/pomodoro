@@ -70,6 +70,10 @@ var Pomodoro = (function () {
 			init = true;
 			period.running = false;
 			update_bar(0, 60 * period.duration);
+			reset_ui();
+			$("#s").html("--");
+			$("#m").html("--");
+			document.title = $('#time').text();
 		};
 	}
 
@@ -78,10 +82,6 @@ var Pomodoro = (function () {
 		var was_already_running = timers[name].running === true;
 		if (stop !== null) {
 			stop();
-			reset_ui();
-			$("#s").html("--");
-			$("#m").html("--");
-			document.title = $('#time').text();
 			stop = null;
 			if (was_already_running)
 				return;
