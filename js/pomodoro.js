@@ -302,9 +302,14 @@ var Pomodoro = (function () {
 			$("input#"+settings.ring.id).prop('checked' , settings.ring.value);
 			$("input#"+settings.cookie.id).prop('checked' , settings.cookie.value);
                         /* Todos */
-                        if ($.cookie("todos") !== null) {
+                        if ($.cookie("todos")) {
                           todos = $.cookie("todos");
-                        }
+                        } else {
+				var todos = {
+					selected : 0,
+					list : [ ],
+				};
+			}
                         draw_todos();
                         $('#new_todo_button').click(function () {
                           new_todo($("#new_todo").val());
