@@ -27,7 +27,7 @@ var Pomodoro = (function () {
 			id : 'tick',
 		},
 		ring : {
-			value : false,
+			value : true,
 			id : 'ring',
 		},
 	};
