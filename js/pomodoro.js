@@ -257,7 +257,7 @@ var Pomodoro = (function () {
           });
           todos_select(todos.selected);
           if (settings.cookie.value) {
-            $.cookie('todos', JSON.stringify(todos));
+            $.cookie('todos', JSON.stringify(todos), { expires: 7 });
           }
         }
 
