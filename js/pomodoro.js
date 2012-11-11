@@ -31,10 +31,7 @@ var Pomodoro = (function () {
 			id : 'ring',
 		},
 	};
-        var todos = {
-          selected : 0,
-          list : [ ],
-        };
+        var todos;
 	var tick = new Audio("sound/tick.wav");
 	var ring = new Audio("sound/ring.wav");
 	var stop = null;
@@ -303,9 +300,9 @@ var Pomodoro = (function () {
 			$("input#"+settings.cookie.id).prop('checked' , settings.cookie.value);
                         /* Todos */
                         if ($.cookie("todos")) {
-                          todos = $.cookie("todos");
+                          todos = JSON.parse($.cookie("todos"));
                         } else {
-				var todos = {
+				todos = {
 					selected : 0,
 					list : [ ],
 				};
